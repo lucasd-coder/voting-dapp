@@ -31,6 +31,8 @@ pub mod voting {
         _poll_id: u64,
     ) -> Result<()> {
         let candidate = &mut ctx.accounts.candidate;
+        let poll = &mut ctx.accounts.poll;
+        poll.candidate_amount += 1;
         candidate.candidate_name = candidate_name;
         candidate.candidate_votes = 0;
         Ok(())
@@ -45,16 +47,45 @@ pub mod voting {
 }
 
 #[derive(Accounts)]
-#[instruction(poll_id: u64, candidate_name: String)]
+#[instruction(candidate_name: String, poll_id: u64)]
 pub struct InitializeCandidate<'info> {
     #[account(mut)]
     pub signer: Signer<'info>,
 
     #[account(
+        mut,
+        seeds = [poll_id.to_le_bytes().as_ref()],
+        bump,
+      )]
+    pub poll: Account<'info, Poll>,
+
+    #[account(
         init,
         payer = signer,
         space =  8 + Candidate::INIT_SPACE,
-        seeds = [poll_id.to_le_bytes().as_ref(), candidate_name.as_bytes()],
+        seeds = [poll_id.to_le_bytes().as_ref(),candidate_name.as_bytes()],
+        bump
+    )]
+    pub candidate: Account<'info, Candidate>,
+
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+#[instruction(candidate_name: String, poll_id: u64)]
+pub struct Vote<'info> {
+    pub signer: Signer<'info>,
+
+    #[account(
+        mut,
+        seeds = [poll_id.to_le_bytes().as_ref()],
+        bump,
+      )]
+    pub poll: Account<'info, Poll>,
+
+    #[account(
+        mut,
+        seeds = [poll_id.to_le_bytes().as_ref(),candidate_name.as_bytes()],
         bump
     )]
     pub candidate: Account<'info, Candidate>,
@@ -96,26 +127,4 @@ pub struct Candidate {
     pub candidate_votes: u64,
     #[max_len(32)]
     pub candidate_name: String,
-}
-
-#[derive(Accounts)]
-#[instruction(candidate_name: String, poll_id: u64)]
-pub struct Vote<'info> {
-    pub signer: Signer<'info>,
-
-    #[account(
-        mut,
-        seeds = [poll_id.to_le_bytes().as_ref()],
-        bump,
-      )]
-    pub poll: Account<'info, Poll>,
-
-    #[account(
-        mut,
-        seeds = [poll_id.to_le_bytes().as_ref(),candidate_name.as_bytes()],
-        bump
-    )]
-    pub candidate: Account<'info, Candidate>,
-
-    pub system_program: Program<'info, System>,
 }

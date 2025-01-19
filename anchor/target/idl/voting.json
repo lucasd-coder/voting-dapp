@@ -26,6 +26,18 @@
           "signer": true
         },
         {
+          "name": "poll",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "arg",
+                "path": "poll_id"
+              }
+            ]
+          }
+        },
+        {
           "name": "candidate",
           "writable": true,
           "pda": {
